@@ -48,13 +48,6 @@ check_pnpm() {
         warn "pnpm is not installed. Installing..."
         npm install -g pnpm || corepack enable && corepack prepare pnpm@latest --activate || error "Failed to install pnpm"
     fi
-    
-    if ! pnpm bin -g &> /dev/null; then
-        warn "Setting up pnpm global bin directory..."
-        pnpm setup 2>/dev/null || true
-        export PNPM_HOME="$HOME/.local/share/pnpm"
-        export PATH="$PNPM_HOME:$PATH"
-    fi
     success "pnpm $(pnpm -v)"
 }
 
@@ -113,13 +106,28 @@ install() {
     info "Building..."
     pnpm build || error "Build failed"
 
-    info "Linking globally..."
-    if ! pnpm link --global 2>/dev/null; then
-        warn "pnpm global bin not configured. Running pnpm setup..."
-        pnpm setup
-        export PNPM_HOME="$HOME/.local/share/pnpm"
-        export PATH="$PNPM_HOME:$PATH"
-        pnpm link --global || error "Failed to link globally"
+    info "Creating global command..."
+    BIN_SOURCE="$INSTALL_DIR/apps/web/bin/ai-orbiter.js"
+    
+    if [ -d "/usr/local/bin" ] && [ -w "/usr/local/bin" ]; then
+        BIN_TARGET="/usr/local/bin/ai-orbiter"
+        ln -sf "$BIN_SOURCE" "$BIN_TARGET"
+        success "Linked to $BIN_TARGET"
+    elif [ -d "$HOME/.local/bin" ]; then
+        BIN_TARGET="$HOME/.local/bin/ai-orbiter"
+        mkdir -p "$HOME/.local/bin"
+        ln -sf "$BIN_SOURCE" "$BIN_TARGET"
+        success "Linked to $BIN_TARGET"
+        if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
+            warn "Add ~/.local/bin to PATH in your shell config"
+        fi
+    else
+        mkdir -p "$HOME/.local/bin"
+        BIN_TARGET="$HOME/.local/bin/ai-orbiter"
+        ln -sf "$BIN_SOURCE" "$BIN_TARGET"
+        success "Linked to $BIN_TARGET"
+        warn "Add ~/.local/bin to PATH:"
+        echo -e "  ${BLUE}export PATH=\"\$HOME/.local/bin:\$PATH\"${NC}"
     fi
 
     echo ""
@@ -127,13 +135,10 @@ install() {
     echo ""
     echo -e "  Run ${GREEN}ai-orbiter start${NC} to launch"
     echo ""
-    echo -e "  ${YELLOW}NOTE:${NC} You may need to restart your terminal or run:"
-    echo -e "    source ~/.bashrc  ${BLUE}(or ~/.zshrc)${NC}"
-    echo ""
     echo -e "  Installation directory: ${BLUE}$INSTALL_DIR${NC}"
     echo ""
     echo -e "  To uninstall:"
-    echo -e "    cd $INSTALL_DIR && pnpm unlink --global && rm -rf $INSTALL_DIR"
+    echo -e "    rm -f $BIN_TARGET && rm -rf $INSTALL_DIR"
     echo ""
 }
 
