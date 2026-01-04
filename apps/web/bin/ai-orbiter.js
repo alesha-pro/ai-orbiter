@@ -101,26 +101,51 @@ program
 
 program
   .command('update')
-  .description('Update AI Orbiter to the latest version')
+  .description('Update AI Orbiter to the latest release')
   .action(async () => {
     const rootDir = path.resolve(__dirname, '../../..');
+    const https = require('https');
     
-    console.log('🔄 Updating AI Orbiter...\n');
+    const getLatestRelease = () => new Promise((resolve, reject) => {
+      const options = {
+        hostname: 'api.github.com',
+        path: '/repos/alesha-pro/ai-orbiter/releases/latest',
+        headers: { 'User-Agent': 'ai-orbiter' }
+      };
+      https.get(options, (res) => {
+        let data = '';
+        res.on('data', chunk => data += chunk);
+        res.on('end', () => {
+          try {
+            const json = JSON.parse(data);
+            resolve(json.tag_name || null);
+          } catch { resolve(null); }
+        });
+      }).on('error', () => resolve(null));
+    });
+    
+    console.log('🔄 Checking for updates...\n');
     
     try {
-      console.log('Fetching latest changes...');
-      execSync('git fetch origin', { cwd: rootDir, stdio: 'inherit' });
+      const currentVersion = 'v' + PKG_VERSION;
+      const latestVersion = await getLatestRelease();
       
-      const localHash = execSync('git rev-parse HEAD', { cwd: rootDir }).toString().trim();
-      const remoteHash = execSync('git rev-parse origin/main', { cwd: rootDir }).toString().trim();
-      
-      if (localHash === remoteHash) {
-        console.log('\n✅ Already up to date!');
-        return;
+      if (!latestVersion) {
+        console.log('⚠️  Could not fetch latest release. Updating from main...');
+        execSync('git fetch origin && git pull origin main', { cwd: rootDir, stdio: 'inherit' });
+      } else {
+        console.log(`Current version: ${currentVersion}`);
+        console.log(`Latest release:  ${latestVersion}`);
+        
+        if (currentVersion === latestVersion) {
+          console.log('\n✅ Already up to date!');
+          return;
+        }
+        
+        console.log(`\nUpdating to ${latestVersion}...`);
+        execSync('git fetch origin --tags', { cwd: rootDir, stdio: 'inherit' });
+        execSync(`git checkout ${latestVersion}`, { cwd: rootDir, stdio: 'inherit' });
       }
-      
-      console.log('Pulling updates...');
-      execSync('git pull origin main', { cwd: rootDir, stdio: 'inherit' });
       
       console.log('\nInstalling dependencies...');
       execSync('pnpm install', { cwd: rootDir, stdio: 'inherit' });
@@ -128,6 +153,7 @@ program
       console.log('\nRebuilding...');
       execSync('pnpm build', { cwd: rootDir, stdio: 'inherit' });
       
+      delete require.cache[require.resolve('../../../package.json')];
       const newVersion = require('../../../package.json').version;
       console.log(`\n✅ Updated to v${newVersion}!`);
       

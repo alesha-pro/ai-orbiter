@@ -5,6 +5,7 @@ set -e
 # Usage: curl -fsSL https://raw.githubusercontent.com/alesha-pro/ai-orbiter/main/install.sh | bash
 
 REPO_URL="https://github.com/alesha-pro/ai-orbiter.git"
+REPO_API="https://api.github.com/repos/alesha-pro/ai-orbiter"
 INSTALL_DIR="${AI_ORBITER_HOME:-$HOME/.ai-orbiter}"
 MIN_NODE_VERSION=18
 
@@ -59,7 +60,6 @@ check_git() {
     success "git $(git --version | cut -d' ' -f3)"
 }
 
-# Check build tools (for better-sqlite3)
 check_build_tools() {
     if [[ "$OSTYPE" == "darwin"* ]]; then
         if ! xcode-select -p &> /dev/null; then
@@ -67,6 +67,10 @@ check_build_tools() {
             xcode-select --install 2>/dev/null || warn "Please run 'xcode-select --install' manually if build fails"
         fi
     fi
+}
+
+get_latest_release() {
+    curl -fsSL "$REPO_API/releases/latest" 2>/dev/null | grep '"tag_name"' | sed -E 's/.*"([^"]+)".*/\1/'
 }
 
 # Main installation
@@ -93,13 +97,27 @@ install() {
         fi
     fi
 
-    # Clone
-    info "Cloning repository..."
-    git clone --depth 1 "$REPO_URL" "$INSTALL_DIR" || error "Failed to clone repository"
+    info "Fetching latest release..."
+    LATEST_VERSION=$(get_latest_release)
+    
+    if [ -z "$LATEST_VERSION" ]; then
+        warn "No releases found, using main branch"
+        LATEST_VERSION="main"
+    else
+        success "Latest version: $LATEST_VERSION"
+    fi
 
-    # Install dependencies
-    info "Installing dependencies (this may take a while)..."
+    info "Cloning repository..."
+    git clone "$REPO_URL" "$INSTALL_DIR" || error "Failed to clone repository"
+    
     cd "$INSTALL_DIR"
+    
+    if [ "$LATEST_VERSION" != "main" ]; then
+        info "Checking out $LATEST_VERSION..."
+        git checkout "$LATEST_VERSION" --quiet || error "Failed to checkout $LATEST_VERSION"
+    fi
+
+    info "Installing dependencies (this may take a while)..."
     pnpm install || error "Failed to install dependencies"
 
     # Build
