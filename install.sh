@@ -43,11 +43,17 @@ check_node() {
     success "Node.js $(node -v)"
 }
 
-# Check pnpm
 check_pnpm() {
     if ! command -v pnpm &> /dev/null; then
         warn "pnpm is not installed. Installing..."
         npm install -g pnpm || corepack enable && corepack prepare pnpm@latest --activate || error "Failed to install pnpm"
+    fi
+    
+    if ! pnpm bin -g &> /dev/null; then
+        warn "Setting up pnpm global bin directory..."
+        pnpm setup 2>/dev/null || true
+        export PNPM_HOME="$HOME/.local/share/pnpm"
+        export PATH="$PNPM_HOME:$PATH"
     fi
     success "pnpm $(pnpm -v)"
 }
@@ -107,18 +113,26 @@ install() {
     info "Building..."
     pnpm build || error "Build failed"
 
-    # Link globally
     info "Linking globally..."
-    pnpm link --global || error "Failed to link globally"
+    if ! pnpm link --global 2>/dev/null; then
+        warn "pnpm global bin not configured. Running pnpm setup..."
+        pnpm setup
+        export PNPM_HOME="$HOME/.local/share/pnpm"
+        export PATH="$PNPM_HOME:$PATH"
+        pnpm link --global || error "Failed to link globally"
+    fi
 
     echo ""
     success "AI Orbiter installed successfully!"
     echo ""
     echo -e "  Run ${GREEN}ai-orbiter start${NC} to launch"
     echo ""
+    echo -e "  ${YELLOW}NOTE:${NC} You may need to restart your terminal or run:"
+    echo -e "    source ~/.bashrc  ${BLUE}(or ~/.zshrc)${NC}"
+    echo ""
     echo -e "  Installation directory: ${BLUE}$INSTALL_DIR${NC}"
     echo ""
-    echo -e "  To uninstall: ${YELLOW}ai-orbiter-uninstall${NC} or:"
+    echo -e "  To uninstall:"
     echo -e "    cd $INSTALL_DIR && pnpm unlink --global && rm -rf $INSTALL_DIR"
     echo ""
 }
