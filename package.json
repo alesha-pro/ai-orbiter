@@ -1,0 +1,42 @@
+{
+  "name": "ai-orbiter",
+  "version": "0.1.0",
+  "description": "AI Orbiter - Unified MCP Server Registry & Management Tool for AI Clients",
+  "author": "kts",
+  "license": "MIT",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "claude",
+    "opencode",
+    "codex",
+    "gemini",
+    "ai-tools",
+    "cli",
+    "registry"
+  ],
+  "bin": {
+    "ai-orbiter": "./apps/web/bin/ai-orbiter.js"
+  },
+  "files": [
+    "apps",
+    "packages"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "start": "node ./apps/web/bin/ai-orbiter.js start",
+    "lint": "turbo run lint",
+    "clean": "turbo run clean && rm -rf node_modules",
+    "typecheck": "turbo run typecheck",
+    "prepublishOnly": "pnpm build"
+  },
+  "devDependencies": {
+    "turbo": "^1.11.0",
+    "typescript": "^5.3.3"
+  },
+  "packageManager": "pnpm@8.15.0",
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

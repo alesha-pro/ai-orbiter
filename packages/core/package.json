@@ -1,0 +1,32 @@
+{
+  "name": "@ai-orbiter/core",
+  "version": "0.1.0",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "lint": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@iarna/toml": "^2.2.5",
+    "better-sqlite3": "^12.5.0",
+    "chokidar": "^3.5.3",
+    "fast-glob": "^3.3.2",
+    "jsonc-parser": "^3.2.0",
+    "uuid": "^9.0.1",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.8",
+    "@types/uuid": "^9.0.7",
+    "@vitest/coverage-v8": "^4.0.16",
+    "tsup": "^8.0.1",
+    "typescript": "^5.3.3",
+    "vitest": "^4.0.16"
+  }
+}
