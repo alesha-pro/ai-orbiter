@@ -99,4 +99,42 @@ program
     });
   });
 
+program
+  .command('update')
+  .description('Update AI Orbiter to the latest version')
+  .action(async () => {
+    const rootDir = path.resolve(__dirname, '../../..');
+    
+    console.log('🔄 Updating AI Orbiter...\n');
+    
+    try {
+      console.log('Fetching latest changes...');
+      execSync('git fetch origin', { cwd: rootDir, stdio: 'inherit' });
+      
+      const localHash = execSync('git rev-parse HEAD', { cwd: rootDir }).toString().trim();
+      const remoteHash = execSync('git rev-parse origin/main', { cwd: rootDir }).toString().trim();
+      
+      if (localHash === remoteHash) {
+        console.log('\n✅ Already up to date!');
+        return;
+      }
+      
+      console.log('Pulling updates...');
+      execSync('git pull origin main', { cwd: rootDir, stdio: 'inherit' });
+      
+      console.log('\nInstalling dependencies...');
+      execSync('pnpm install', { cwd: rootDir, stdio: 'inherit' });
+      
+      console.log('\nRebuilding...');
+      execSync('pnpm build', { cwd: rootDir, stdio: 'inherit' });
+      
+      const newVersion = require('../../../package.json').version;
+      console.log(`\n✅ Updated to v${newVersion}!`);
+      
+    } catch (e) {
+      console.error('\n❌ Update failed:', e.message);
+      process.exit(1);
+    }
+  });
+
 program.parse();
