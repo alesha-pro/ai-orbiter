@@ -51,4 +51,16 @@ CREATE TABLE IF NOT EXISTS activity_log (
 );
 
 CREATE INDEX IF NOT EXISTS idx_activity_log_created ON activity_log(created_at DESC);
+
+CREATE TABLE IF NOT EXISTS pending_conflicts (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  sources TEXT NOT NULL,
+  differences TEXT NOT NULL,
+  created_at INTEGER NOT NULL,
+  resolved_at INTEGER,
+  resolution TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_pending_conflicts_resolved ON pending_conflicts(resolved_at);
 `;
